@@ -1,0 +1,84 @@
+version: '3.8'
+
+services:
+# 1. Database Service
+  mysql:
+    image: mysql:8.0
+    container_name: helix-mysql
+    ports: 
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - helix-network
+
+# 2. Redis Service (Crucial for Laravel Reverb and Token Caching)
+  redis:
+    image: redis:alpine
+    container_name: helix-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - helix-network
+
+# 3. Central SSO Auth API (laravel)
+  auth-api:
+    build:
+      context: ./apps/backend/auth-api
+      dockerfile: Dockerfile
+    container_name: helix-auth-api
+    volumes:
+      - ./apps/backend/auth-api:/var/www
+    environment:
+      - DB_HOST=mysql
+      - REDIS_HOST=redis
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - helix-network
+# 4. Admin Web Frontend (Next.js)
+  admin-web:
+    build:
+      context: ./apps/frontend/admin-web
+      dockerfile: Dockerfile
+    container_name: helix-admin-web
+    ports: 
+      - "3000:3000"
+    volumes:
+      - ./apps/frontend/admin-web:/app
+      - /app/.next
+      - /app/node-modules
+    environment:
+      - NEXT_PUBLIC_AUTH_API_URL=http://localhost:8000
+    networks:
+      - helix-network
+
+# 5. Reverse Proxy (Handles routing clean local domain URLs to containers)
+  nginx:
+    image: nginx:alpine
+    container_name: helix-nginx
+    ports: 
+      - "8000:8000" # Auth API Gateway
+      - "8001:8001" # HRM API Gateway
+    volumes:
+      - ./nginx.config:/etc/nginx/nginx.conf:ro
+    depends_on: 
+      - auth-api
+      #- hrm-api
+    networks:
+      - helix-network
+  
+networks:
+  helix-network:
+    driver: bridge
+
+volumes:
+  mysql-data:
+    driver: local
+
+
+
