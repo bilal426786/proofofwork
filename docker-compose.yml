@@ -9,13 +9,10 @@ volumes:
   mysql_app2_data:
 
 services:
-
-  # ─────────────────────────────────────────────────────────
+  # ─────────────────────────────────────────────
   # FRONTEND APP 1  →  http://localhost:3000
-  # Only used in production. In dev, run: npm run dev locally
-  # ─────────────────────────────────────────────────────────
+  # ─────────────────────────────────────────────
   frontend-app1:
-    profiles: ["production"]
     build:
       context: ./apps/frontend-app1
       dockerfile: Dockerfile
@@ -31,12 +28,10 @@ services:
     networks:
       - monorepo
 
-  # ─────────────────────────────────────────────────────────
+  # ─────────────────────────────────────────────
   # FRONTEND APP 2  →  http://localhost:3001
-  # Only used in production. In dev, run: npm run dev locally
-  # ─────────────────────────────────────────────────────────
+  # ─────────────────────────────────────────────
   frontend-app2:
-    profiles: ["production"]
     build:
       context: ./apps/frontend-app2
       dockerfile: Dockerfile
@@ -52,9 +47,9 @@ services:
     networks:
       - monorepo
 
-  # ─────────────────────────────────────────────────────────
-  # BACKEND APP 1  (PHP-FPM)  — always runs
-  # ─────────────────────────────────────────────────────────
+  # ─────────────────────────────────────────────
+  # BACKEND APP 1  (PHP-FPM)
+  # ─────────────────────────────────────────────
   backend-app1:
     build:
       context: ./apps/backend-app1
@@ -62,9 +57,8 @@ services:
     container_name: backend-app1
     restart: unless-stopped
     volumes:
-      # Mount your local code into the container — edit files, changes reflect instantly
-      - ./apps/backend-app1:/var/www/html
-      - /var/www/html/vendor  # keep vendor inside container, don't overwrite it
+      - ./apps/backend-app1/storage:/var/www/html/storage
+      - ./apps/backend-app1/bootstrap/cache:/var/www/html/bootstrap/cache
       - ./docker/php/php.ini:/usr/local/etc/php/conf.d/custom.ini
     environment:
       - APP_NAME=BackendApp1
@@ -83,9 +77,9 @@ services:
     networks:
       - monorepo
 
-  # ─────────────────────────────────────────────────────────
-  # BACKEND APP 2  (PHP-FPM)  — always runs
-  # ─────────────────────────────────────────────────────────
+  # ─────────────────────────────────────────────
+  # BACKEND APP 2  (PHP-FPM)
+  # ─────────────────────────────────────────────
   backend-app2:
     build:
       context: ./apps/backend-app2
@@ -93,8 +87,8 @@ services:
     container_name: backend-app2
     restart: unless-stopped
     volumes:
-      - ./apps/backend-app2:/var/www/html
-      - /var/www/html/vendor
+      - ./apps/backend-app2/storage:/var/www/html/storage
+      - ./apps/backend-app2/bootstrap/cache:/var/www/html/bootstrap/cache
       - ./docker/php/php.ini:/usr/local/etc/php/conf.d/custom.ini
     environment:
       - APP_NAME=BackendApp2
@@ -113,9 +107,9 @@ services:
     networks:
       - monorepo
 
-  # ─────────────────────────────────────────────────────────
+  # ─────────────────────────────────────────────
   # NGINX FOR BACKEND APP 1  →  http://localhost:8001
-  # ─────────────────────────────────────────────────────────
+  # ─────────────────────────────────────────────
   nginx-app1:
     image: nginx:1.25-alpine
     container_name: nginx-app1
@@ -130,9 +124,9 @@ services:
     networks:
       - monorepo
 
-  # ─────────────────────────────────────────────────────────
+  # ─────────────────────────────────────────────
   # NGINX FOR BACKEND APP 2  →  http://localhost:8002
-  # ─────────────────────────────────────────────────────────
+  # ─────────────────────────────────────────────
   nginx-app2:
     image: nginx:1.25-alpine
     container_name: nginx-app2
@@ -147,9 +141,9 @@ services:
     networks:
       - monorepo
 
-  # ─────────────────────────────────────────────────────────
+  # ─────────────────────────────────────────────
   # MYSQL FOR BACKEND APP 1
-  # ─────────────────────────────────────────────────────────
+  # ─────────────────────────────────────────────
   mysql-app1:
     image: mysql:8.3
     container_name: mysql-app1
@@ -171,9 +165,9 @@ services:
     networks:
       - monorepo
 
-  # ─────────────────────────────────────────────────────────
+  # ─────────────────────────────────────────────
   # MYSQL FOR BACKEND APP 2
-  # ─────────────────────────────────────────────────────────
+  # ─────────────────────────────────────────────
   mysql-app2:
     image: mysql:8.3
     container_name: mysql-app2
