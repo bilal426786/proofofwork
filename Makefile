@@ -21,38 +21,38 @@ restart: ## Restart all containers
 
 ## ── Laravel: backend-app1 ────────────────────────────────
 migrate-app1: ## Run migrations for app1
-	docker compose exec backend-app1 php artisan migrate --force
+	docker compose exec --workdir /var/www/html backend-app1 php artisan migrate --force
 
 seed-app1: ## Run seeders for app1
-	docker compose exec backend-app1 php artisan db:seed --force
+	docker compose exec --workdir /var/www/html backend-app1 php artisan db:seed --force
 
 fresh-app1: ## Fresh migrate + seed app1
-	docker compose exec backend-app1 php artisan migrate:fresh --seed --force
+	docker compose exec --workdir /var/www/html backend-app1 php artisan migrate:fresh --seed --force
 
 key-app1: ## Generate app key for app1
-	docker compose exec backend-app1 php artisan key:generate --force
+	docker compose exec --workdir /var/www/html backend-app1 php artisan key:generate --force
 
 shell-app1: ## Open shell in backend-app1
-	docker compose exec backend-app1 sh
+	docker compose exec --workdir /var/www/html backend-app1 sh
 
 tinker-app1: ## Open Laravel Tinker in app1
-	docker compose exec backend-app1 php artisan tinker
+	docker compose exec --workdir /var/www/html backend-app1 php artisan tinker
 
 ## ── Laravel: backend-app2 ────────────────────────────────
 migrate-app2: ## Run migrations for app2
-	docker compose exec backend-app2 php artisan migrate --force
+	docker compose exec --workdir /var/www/html backend-app2 php artisan migrate --force
 
 seed-app2: ## Run seeders for app2
-	docker compose exec backend-app2 php artisan db:seed --force
+	docker compose exec --workdir /var/www/html backend-app2 php artisan db:seed --force
 
 fresh-app2: ## Fresh migrate + seed app2
-	docker compose exec backend-app2 php artisan migrate:fresh --seed --force
+	docker compose exec --workdir /var/www/html backend-app2 php artisan migrate:fresh --seed --force
 
 key-app2: ## Generate app key for app2
-	docker compose exec backend-app2 php artisan key:generate --force
+	docker compose exec --workdir /var/www/html backend-app2 php artisan key:generate --force
 
 shell-app2: ## Open shell in backend-app2
-	docker compose exec backend-app2 sh
+	docker compose exec --workdir /var/www/html backend-app2 sh
 
 ## ── Setup ────────────────────────────────────────────────
 setup: up ## Full setup: start, generate keys, migrate, seed

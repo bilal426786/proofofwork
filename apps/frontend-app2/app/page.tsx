@@ -20,8 +20,8 @@ export default function Home() {
       <section className="max-w-5xl mx-auto px-6 pt-20 pb-16 text-center">
         <p className="text-xs font-mono uppercase tracking-widest text-violet-500 mb-4">Frontend App 2 · Next.js 15</p>
         <h1 className="text-5xl md:text-6xl font-black text-stone-900 leading-tight mb-6">
-          Built to ship.<br />
-          <span className="text-violet-600">Wired to scale.</span>
+          Built to ship. Umme<br />
+          <span className="text-violet-600">Wired to scale. kalsoom</span>
         </h1>
         <p className="text-lg text-stone-500 max-w-2xl mx-auto mb-10">
           A production-grade monorepo with two Next.js frontends, two Laravel backends, Nginx reverse proxy, and Docker Compose — running locally with a single command.
