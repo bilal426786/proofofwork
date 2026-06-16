@@ -1,0 +1,41 @@
+version: "3.9"
+
+# Development overrides — extends docker-compose.yml
+# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+  frontend-app1:
+    build:
+      target: deps
+    command: npm run dev
+    volumes:
+      - ./apps/frontend-app1:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      - NODE_ENV=development
+
+  frontend-app2:
+    build:
+      target: deps
+    command: npm run dev
+    volumes:
+      - ./apps/frontend-app2:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      - NODE_ENV=development
+
+  backend-app1:
+    volumes:
+      - ./apps/backend-app1:/var/www/html
+    environment:
+      - APP_DEBUG=true
+      - APP_ENV=local
+
+  backend-app2:
+    volumes:
+      - ./apps/backend-app2:/var/www/html
+    environment:
+      - APP_DEBUG=true
+      - APP_ENV=local

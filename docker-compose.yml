@@ -1,84 +1,196 @@
-version: '3.8'
+version: "3.9"
 
-services:
-# 1. Database Service
-  mysql:
-    image: mysql:8.0
-    container_name: helix-mysql
-    ports: 
-      - "3306:3306"
-    environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
-    volumes:
-      - mysql-data:/var/lib/mysql
-    networks:
-      - helix-network
-
-# 2. Redis Service (Crucial for Laravel Reverb and Token Caching)
-  redis:
-    image: redis:alpine
-    container_name: helix-redis
-    ports:
-      - "6379:6379"
-    networks:
-      - helix-network
-
-# 3. Central SSO Auth API (laravel)
-  auth-api:
-    build:
-      context: ./apps/backend/auth-api
-      dockerfile: Dockerfile
-    container_name: helix-auth-api
-    volumes:
-      - ./apps/backend/auth-api:/var/www
-    environment:
-      - DB_HOST=mysql
-      - REDIS_HOST=redis
-    depends_on:
-      - mysql
-      - redis
-    networks:
-      - helix-network
-# 4. Admin Web Frontend (Next.js)
-  admin-web:
-    build:
-      context: ./apps/frontend/admin-web
-      dockerfile: Dockerfile
-    container_name: helix-admin-web
-    ports: 
-      - "3000:3000"
-    volumes:
-      - ./apps/frontend/admin-web:/app
-      - /app/.next
-      - /app/node-modules
-    environment:
-      - NEXT_PUBLIC_AUTH_API_URL=http://localhost:8000
-    networks:
-      - helix-network
-
-# 5. Reverse Proxy (Handles routing clean local domain URLs to containers)
-  nginx:
-    image: nginx:alpine
-    container_name: helix-nginx
-    ports: 
-      - "8000:8000" # Auth API Gateway
-      - "8001:8001" # HRM API Gateway
-    volumes:
-      - ./nginx.config:/etc/nginx/nginx.conf:ro
-    depends_on: 
-      - auth-api
-      #- hrm-api
-    networks:
-      - helix-network
-  
 networks:
-  helix-network:
+  monorepo:
     driver: bridge
 
 volumes:
-  mysql-data:
-    driver: local
+  mysql_app1_data:
+  mysql_app2_data:
 
+services:
 
+  # ─────────────────────────────────────────────────────────
+  # FRONTEND APP 1  →  http://localhost:3000
+  # Only used in production. In dev, run: npm run dev locally
+  # ─────────────────────────────────────────────────────────
+  frontend-app1:
+    profiles: ["production"]
+    build:
+      context: ./apps/frontend-app1
+      dockerfile: Dockerfile
+    container_name: frontend-app1
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - NEXT_PUBLIC_API_URL_1=http://localhost:8001
+      - NEXT_PUBLIC_API_URL_2=http://localhost:8002
+    networks:
+      - monorepo
 
+  # ─────────────────────────────────────────────────────────
+  # FRONTEND APP 2  →  http://localhost:3001
+  # Only used in production. In dev, run: npm run dev locally
+  # ─────────────────────────────────────────────────────────
+  frontend-app2:
+    profiles: ["production"]
+    build:
+      context: ./apps/frontend-app2
+      dockerfile: Dockerfile
+    container_name: frontend-app2
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - NEXT_PUBLIC_API_URL_1=http://localhost:8001
+      - NEXT_PUBLIC_API_URL_2=http://localhost:8002
+    networks:
+      - monorepo
+
+  # ─────────────────────────────────────────────────────────
+  # BACKEND APP 1  (PHP-FPM)  — always runs
+  # ─────────────────────────────────────────────────────────
+  backend-app1:
+    build:
+      context: ./apps/backend-app1
+      dockerfile: Dockerfile
+    container_name: backend-app1
+    restart: unless-stopped
+    volumes:
+      # Mount your local code into the container — edit files, changes reflect instantly
+      - ./apps/backend-app1:/var/www/html
+      - /var/www/html/vendor  # keep vendor inside container, don't overwrite it
+      - ./docker/php/php.ini:/usr/local/etc/php/conf.d/custom.ini
+    environment:
+      - APP_NAME=BackendApp1
+      - APP_ENV=local
+      - APP_DEBUG=true
+      - APP_URL=http://localhost:8001
+      - DB_CONNECTION=mysql
+      - DB_HOST=mysql-app1
+      - DB_PORT=3306
+      - DB_DATABASE=app1_db
+      - DB_USERNAME=laravel
+      - DB_PASSWORD=secret
+    depends_on:
+      mysql-app1:
+        condition: service_healthy
+    networks:
+      - monorepo
+
+  # ─────────────────────────────────────────────────────────
+  # BACKEND APP 2  (PHP-FPM)  — always runs
+  # ─────────────────────────────────────────────────────────
+  backend-app2:
+    build:
+      context: ./apps/backend-app2
+      dockerfile: Dockerfile
+    container_name: backend-app2
+    restart: unless-stopped
+    volumes:
+      - ./apps/backend-app2:/var/www/html
+      - /var/www/html/vendor
+      - ./docker/php/php.ini:/usr/local/etc/php/conf.d/custom.ini
+    environment:
+      - APP_NAME=BackendApp2
+      - APP_ENV=local
+      - APP_DEBUG=true
+      - APP_URL=http://localhost:8002
+      - DB_CONNECTION=mysql
+      - DB_HOST=mysql-app2
+      - DB_PORT=3306
+      - DB_DATABASE=app2_db
+      - DB_USERNAME=laravel
+      - DB_PASSWORD=secret
+    depends_on:
+      mysql-app2:
+        condition: service_healthy
+    networks:
+      - monorepo
+
+  # ─────────────────────────────────────────────────────────
+  # NGINX FOR BACKEND APP 1  →  http://localhost:8001
+  # ─────────────────────────────────────────────────────────
+  nginx-app1:
+    image: nginx:1.25-alpine
+    container_name: nginx-app1
+    restart: unless-stopped
+    ports:
+      - "8001:80"
+    volumes:
+      - ./apps/backend-app1/public:/var/www/html/public:ro
+      - ./docker/nginx/backend-app1.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - backend-app1
+    networks:
+      - monorepo
+
+  # ─────────────────────────────────────────────────────────
+  # NGINX FOR BACKEND APP 2  →  http://localhost:8002
+  # ─────────────────────────────────────────────────────────
+  nginx-app2:
+    image: nginx:1.25-alpine
+    container_name: nginx-app2
+    restart: unless-stopped
+    ports:
+      - "8002:80"
+    volumes:
+      - ./apps/backend-app2/public:/var/www/html/public:ro
+      - ./docker/nginx/backend-app2.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - backend-app2
+    networks:
+      - monorepo
+
+  # ─────────────────────────────────────────────────────────
+  # MYSQL FOR BACKEND APP 1
+  # ─────────────────────────────────────────────────────────
+  mysql-app1:
+    image: mysql:8.3
+    container_name: mysql-app1
+    restart: unless-stopped
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_DATABASE: app1_db
+      MYSQL_USER: laravel
+      MYSQL_PASSWORD: secret
+      MYSQL_ROOT_PASSWORD: rootsecret
+    volumes:
+      - mysql_app1_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootsecret"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - monorepo
+
+  # ─────────────────────────────────────────────────────────
+  # MYSQL FOR BACKEND APP 2
+  # ─────────────────────────────────────────────────────────
+  mysql-app2:
+    image: mysql:8.3
+    container_name: mysql-app2
+    restart: unless-stopped
+    ports:
+      - "3308:3306"
+    environment:
+      MYSQL_DATABASE: app2_db
+      MYSQL_USER: laravel
+      MYSQL_PASSWORD: secret
+      MYSQL_ROOT_PASSWORD: rootsecret
+    volumes:
+      - mysql_app2_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootsecret"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - monorepo
