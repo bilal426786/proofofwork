@@ -10,16 +10,6 @@
     "dev:app1": "cd apps/frontend-app1 && npm run dev",
     "dev:app2": "cd apps/frontend-app2 && npm run dev",
     "build:app1": "cd apps/frontend-app1 && npm run build",
-    "build:app2": "cd apps/frontend-app2 && npm run build",
-    "docker:up": "docker compose up -d --build",
-    "docker:down": "docker compose down",
-    "docker:logs": "docker compose logs -f",
-    "docker:ps": "docker compose ps",
-    "migrate:app1": "docker compose exec backend-app1 php artisan migrate --force",
-    "migrate:app2": "docker compose exec backend-app2 php artisan migrate --force",
-    "seed:app1": "docker compose exec backend-app1 php artisan db:seed --force",
-    "seed:app2": "docker compose exec backend-app2 php artisan db:seed --force",
-    "key:app1": "docker compose exec backend-app1 php artisan key:generate --force",
-    "key:app2": "docker compose exec backend-app2 php artisan key:generate --force"
+    "build:app2": "cd apps/frontend-app2 && npm run build"
   }
 }

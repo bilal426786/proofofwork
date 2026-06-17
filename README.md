@@ -1,167 +1,80 @@
-# Full-Stack Monorepo
+# Monorepo — Full Stack Docker Setup
 
-A production-ready monorepo with **2 Next.js frontends** + **2 Laravel backends** running on Docker Compose.
+A production-grade monorepo with 2 Next.js frontends, 2 Laravel backends, shared Redis, isolated MySQL databases, and Nginx reverse proxies — all orchestrated with Docker Compose.
 
-## Architecture
+## Stack Versions
 
-```
-monorepo/
-├── apps/
-│   ├── frontend-app1/        # Next.js 15 — Dashboard (port 3000)
-│   ├── frontend-app2/        # Next.js 15 — Portal (port 3001)
-│   ├── backend-app1/         # Laravel 11 API (port 8001)
-│   └── backend-app2/         # Laravel 11 API (port 8002)
-├── docker/
-│   ├── nginx/
-│   │   ├── backend-app1.conf
-│   │   └── backend-app2.conf
-│   └── php/
-│       ├── php.ini
-│       └── www.conf
-├── docker-compose.yml
-├── docker-compose.dev.yml
-├── Makefile
-└── setup.sh
-```
+| Service     | Version       | Purpose                        |
+|-------------|---------------|--------------------------------|
+| Next.js     | 15.3.3        | Frontend (JavaScript)          |
+| React       | 19            | UI framework                   |
+| Node.js     | 22 LTS        | Next.js runtime                |
+| Laravel     | 12.x          | Backend API framework          |
+| PHP         | 8.4           | Laravel runtime                |
+| MySQL       | 9.1           | Relational databases (×2)      |
+| Redis       | 7.4           | Cache · Sessions · Queues      |
+| Nginx       | 1.27 Alpine   | PHP-FPM reverse proxy (×2)     |
+| Composer    | 2.8           | PHP dependency manager         |
 
-## Service URLs
+## Services & Ports
 
-| Service          | URL                              |
-|------------------|----------------------------------|
-| Frontend App 1   | http://localhost:3000            |
-| Frontend App 2   | http://localhost:3001            |
-| Backend API 1    | http://localhost:8001/api/health |
-| Backend API 2    | http://localhost:8002/api/health |
-| MySQL App 1      | localhost:3307                   |
-| MySQL App 2      | localhost:3308                   |
+| Container      | URL / Port                      |
+|----------------|---------------------------------|
+| frontend-app1  | http://localhost:3000           |
+| frontend-app2  | http://localhost:3001           |
+| nginx-app1     | http://localhost:8001           |
+| nginx-app2     | http://localhost:8002           |
+| mysql-app1     | localhost:3307                  |
+| mysql-app2     | localhost:3308                  |
+| redis          | localhost:6379                  |
 
 ## Quick Start
 
-### Option A — Automated Setup (recommended)
-
 ```bash
-chmod +x setup.sh
-./setup.sh
-```
+# Full setup (first time)
+make setup
 
-### Option B — Manual Setup
-
-```bash
-# 1. Build and start all containers
+# Or manually:
 docker compose up -d --build
-
-# 2. Wait ~20s for MySQL to be healthy, then:
-
-# 3. Generate app keys
-docker compose exec backend-app1 php artisan key:generate --force
-docker compose exec backend-app2 php artisan key:generate --force
-
-# 4. Run migrations
-docker compose exec backend-app1 php artisan migrate --force
-docker compose exec backend-app2 php artisan migrate --force
-
-# 5. (Optional) Seed test data
-docker compose exec backend-app1 php artisan db:seed --force
-docker compose exec backend-app2 php artisan db:seed --force
-```
-
-### Option C — Makefile
-
-```bash
-make setup   # Full automated setup
-make up      # Start containers
-make down    # Stop containers
-make logs    # Tail logs
-make ps      # List containers
-make help    # Show all commands
+sleep 20
+make key-app1 key-app2 migrate-app1 migrate-app2 seed-app1 seed-app2
 ```
 
 ## API Endpoints
 
-### Both backends expose:
+```
+GET /api/health      — Health check (DB + Redis status)
+GET /api/info        — App & PHP info
+GET /api/redis-demo  — Redis counter demo (increments each call)
+GET /api/users       — List users (Redis-cached)
+POST /api/users      — Create user
+GET /api/users/{id}  — Get user
+PUT /api/users/{id}  — Update user
+DELETE /api/users/{id} — Delete user
+```
 
-| Method | Endpoint         | Description      |
-|--------|-----------------|------------------|
-| GET    | `/up`           | Laravel health   |
-| GET    | `/api/health`   | App health check |
-| GET    | `/api/info`     | App info         |
-| GET    | `/api/users`    | List users       |
-| POST   | `/api/users`    | Create user      |
-| GET    | `/api/users/{id}` | Get user       |
-| PUT    | `/api/users/{id}` | Update user    |
-| DELETE | `/api/users/{id}` | Delete user    |
+## Redis
 
-### Example: Create a user
+Both Laravel apps share a single Redis instance for:
+- **Cache** (`CACHE_DRIVER=redis`) — user lists cached for 60s
+- **Sessions** (`SESSION_DRIVER=redis`)
+- **Queues** (`QUEUE_CONNECTION=redis`)
 
 ```bash
-curl -X POST http://localhost:8001/api/users \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Rizwan","email":"rizwan@example.com","password":"secret123"}'
+make redis-cli       # Open Redis CLI
+make redis-info      # Redis server info
+make redis-flush     # Flush all keys
 ```
 
-## Development Workflow
-
-### Run Next.js in dev mode (hot reload)
+## Useful Commands
 
 ```bash
-# App 1
-cd apps/frontend-app1 && npm install && npm run dev
-
-# App 2
-cd apps/frontend-app2 && npm install && npm run dev
+make up              # Start all services
+make down            # Stop all services
+make logs            # Tail logs
+make ps              # Container status
+make fresh-app1      # Fresh migrate + seed app1
+make fresh-app2      # Fresh migrate + seed app2
+make shell-app1      # Shell into backend-app1
+make redis-cli       # Redis CLI
 ```
-
-### Shell into a Laravel container
-
-```bash
-make shell-app1
-# or
-docker compose exec backend-app1 sh
-```
-
-### Run artisan commands
-
-```bash
-docker compose exec backend-app1 php artisan migrate:fresh --seed
-docker compose exec backend-app1 php artisan tinker
-docker compose exec backend-app1 php artisan route:list
-```
-
-### View logs
-
-```bash
-docker compose logs -f backend-app1   # Laravel logs
-docker compose logs -f frontend-app1  # Next.js logs
-docker compose logs -f nginx-app1     # Nginx access logs
-```
-
-## Environment Variables
-
-Copy `.env.example` to `.env` in each Laravel app and adjust as needed.
-
-### Frontend apps: `apps/frontend-appX/.env.local`
-
-```env
-NEXT_PUBLIC_API_URL_1=http://localhost:8001
-NEXT_PUBLIC_API_URL_2=http://localhost:8002
-```
-
-### Backend apps: `apps/backend-appX/.env`
-
-```env
-APP_NAME=BackendApp1
-APP_ENV=local
-APP_KEY=     # Generated by artisan key:generate
-DB_HOST=mysql-app1
-DB_DATABASE=app1_db
-DB_USERNAME=laravel
-DB_PASSWORD=secret
-```
-
-## Stack
-
-- **Frontend**: Next.js 15, React 19, TypeScript, Tailwind CSS, App Router
-- **Backend**: Laravel 11, PHP 8.2, PHP-FPM
-- **Database**: MySQL 8.3 (separate instance per backend)
-- **Proxy**: Nginx 1.25 (one per backend)
-- **Containers**: Docker Compose with health checks and named networks

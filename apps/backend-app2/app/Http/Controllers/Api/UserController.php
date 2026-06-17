@@ -6,12 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class UserController extends Controller
 {
     public function index(): JsonResponse
     {
-        return response()->json(User::latest()->paginate(15));
+        $users = Cache::remember('users:all', 60, fn () => User::latest()->paginate(15));
+        return response()->json($users);
     }
 
     public function store(Request $request): JsonResponse
@@ -26,6 +28,8 @@ class UserController extends Controller
             ...$validated,
             'password' => bcrypt($validated['password']),
         ]);
+
+        Cache::forget('users:all');
 
         return response()->json($user, 201);
     }
@@ -43,6 +47,7 @@ class UserController extends Controller
         ]);
 
         $user->update($validated);
+        Cache::forget('users:all');
 
         return response()->json($user);
     }
@@ -50,6 +55,7 @@ class UserController extends Controller
     public function destroy(User $user): JsonResponse
     {
         $user->delete();
+        Cache::forget('users:all');
         return response()->json(['message' => 'User deleted'], 200);
     }
 }

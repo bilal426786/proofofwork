@@ -1,5 +1,5 @@
-vendor
-node_modules
-.git
+vendor/
+.git/
 .env
 *.log
+node_modules/

@@ -1,41 +1,35 @@
 # Dependencies
-**/node_modules/
-**/vendor/
+node_modules/
+vendor/
 
 # Next.js
-**/.next/
-**/out/
-**/dist/
+.next/
+out/
 
-# Laravel
-**/.env
-!**/.env.example
-**/bootstrap/cache/*.php
-!**/bootstrap/cache/.gitkeep
-**/storage/app/public/*
-!**/storage/app/public/.gitkeep
-**/storage/framework/cache/*
-!**/storage/framework/cache/.gitkeep
-**/storage/framework/sessions/*
-!**/storage/framework/sessions/.gitkeep
-**/storage/framework/testing/*
-**/storage/framework/views/*
-!**/storage/framework/views/.gitkeep
-**/storage/logs/*
-!**/storage/logs/.gitkeep
+# Env
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# Docker volumes
+docker-data/
 
 # OS
 .DS_Store
 Thumbs.db
 
 # IDE
-.vscode/
 .idea/
+.vscode/
 *.swp
-*.swo
 
-# Docker
-.docker/
-
-# Misc
-npm-debug.log*
+# Laravel
+bootstrap/cache/*.php
+storage/framework/cache/data/
+storage/framework/sessions/
+storage/framework/views/
+storage/logs/
