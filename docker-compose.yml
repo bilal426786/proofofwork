@@ -5,14 +5,12 @@ networks:
     driver: bridge
 
 volumes:
-  mysql_app1_data:
-  mysql_app2_data:
+  mysql_shared_data:
   redis_data:
 
 services:
-
   # ─────────────────────────────────────────────
-  # REDIS  →  redis://localhost:6379
+  # REDIS (Shared In-Memory Store)
   # ─────────────────────────────────────────────
   redis:
     image: redis:7.4-alpine
@@ -33,76 +31,261 @@ services:
       - monorepo
 
   # ─────────────────────────────────────────────
-  # FRONTEND APP 1  →  http://localhost:3000
+  # FRONTENDS (Ports: 3000 to 3013)
   # ─────────────────────────────────────────────
-  frontend-app1:
+  account:
     build:
-      context: ./apps/frontend-app1
+      context: ./apps/frontend/account
       dockerfile: Dockerfile
-    container_name: frontend-app1
+    container_name: account
     restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
       - NODE_ENV=production
       - PORT=3000
-      - NEXT_PUBLIC_APP_NAME=App One
-      - NEXT_PUBLIC_API_URL_1=http://localhost:8001
-      - NEXT_PUBLIC_API_URL_2=http://localhost:8002
+      - NEXT_PUBLIC_API_URL_IDP=http://localhost:8000/api/v1/idp
+      - NEXT_PUBLIC_API_URL_CORE=http://localhost:8000/api/v1/core
+      - NEXT_PUBLIC_API_URL_BUSINESS=http://localhost:8000/api/v1/business
     networks:
       - monorepo
 
-  # ─────────────────────────────────────────────
-  # FRONTEND APP 2  →  http://localhost:3001
-  # ─────────────────────────────────────────────
-  frontend-app2:
+  admin:
     build:
-      context: ./apps/frontend-app2
+      context: ./apps/frontend/admin
       dockerfile: Dockerfile
-    container_name: frontend-app2
+    container_name: admin
     restart: unless-stopped
     ports:
       - "3001:3001"
     environment:
       - NODE_ENV=production
       - PORT=3001
-      - NEXT_PUBLIC_APP_NAME=App Two
-      - NEXT_PUBLIC_API_URL_1=http://localhost:8001
-      - NEXT_PUBLIC_API_URL_2=http://localhost:8002
+      - NEXT_PUBLIC_API_URL_IDP=http://localhost:8000/api/v1/idp
+      - NEXT_PUBLIC_API_URL_CORE=http://localhost:8000/api/v1/core
+      - NEXT_PUBLIC_API_URL_BUSINESS=http://localhost:8000/api/v1/business
+    networks:
+      - monorepo
+
+  ai:
+    build:
+      context: ./apps/frontend/ai
+      dockerfile: Dockerfile
+    container_name: ai
+    restart: unless-stopped
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=production
+      - PORT=3002
+    networks:
+      - monorepo
+
+  approval:
+    build:
+      context: ./apps/frontend/approval
+      dockerfile: Dockerfile
+    container_name: approval
+    restart: unless-stopped
+    ports:
+      - "3003:3003"
+    networks:
+      - monorepo
+
+  chats:
+    build:
+      context: ./apps/frontend/chats
+      dockerfile: Dockerfile
+    container_name: chats
+    restart: unless-stopped
+    ports:
+      - "3004:3004"
+    networks:
+      - monorepo
+
+  crm:
+    build:
+      context: ./apps/frontend/crm
+      dockerfile: Dockerfile
+    container_name: crm
+    restart: unless-stopped
+    ports:
+      - "3005:3005"
+    networks:
+      - monorepo
+
+  drive:
+    build:
+      context: ./apps/frontend/drive
+      dockerfile: Dockerfile
+    container_name: drive
+    restart: unless-stopped
+    ports:
+      - "3006:3006"
+    networks:
+      - monorepo
+
+  ecommerce:
+    build:
+      context: ./apps/frontend/ecommerce
+      dockerfile: Dockerfile
+    container_name: ecommerce
+    restart: unless-stopped
+    ports:
+      - "3007:3007"
+    networks:
+      - monorepo
+
+  finance:
+    build:
+      context: ./apps/frontend/finance
+      dockerfile: Dockerfile
+    container_name: finance
+    restart: unless-stopped
+    ports:
+      - "3008:3008"
+    networks:
+      - monorepo
+
+  mail:
+    build:
+      context: ./apps/frontend/mail
+      dockerfile: Dockerfile
+    container_name: mail
+    restart: unless-stopped
+    ports:
+      - "3009:3009"
+    networks:
+      - monorepo
+
+  notification:
+    build:
+      context: ./apps/frontend/notification
+      dockerfile: Dockerfile
+    container_name: notification
+    restart: unless-stopped
+    ports:
+      - "3010:3010"
+    networks:
+      - monorepo
+
+  superadmin:
+    build:
+      context: ./apps/frontend/superadmin
+      dockerfile: Dockerfile
+    container_name: superadmin
+    restart: unless-stopped
+    ports:
+      - "3011:3011"
+    networks:
+      - monorepo
+
+  website:
+    build:
+      context: ./apps/frontend/website
+      dockerfile: Dockerfile
+    container_name: website
+    restart: unless-stopped
+    ports:
+      - "3012:3012"
+    networks:
+      - monorepo
+
+  workspace:
+    build:
+      context: ./apps/frontend/workspace
+      dockerfile: Dockerfile
+    container_name: workspace
+    restart: unless-stopped
+    ports:
+      - "3013:3013"
     networks:
       - monorepo
 
   # ─────────────────────────────────────────────
-  # BACKEND APP 1  (PHP-FPM)
+  # BACKENDS (PHP-FPM)
   # ─────────────────────────────────────────────
-  backend-app1:
+  idp:
     build:
-      context: ./apps/backend-app1
+      context: ./apps/backend/idp
       dockerfile: Dockerfile
-    container_name: backend-app1
+    container_name: idp
     restart: unless-stopped
     volumes:
-      - ./apps/backend-app1/storage:/var/www/html/storage
-      - ./apps/backend-app1/bootstrap/cache:/var/www/html/bootstrap/cache
+      - ./apps/backend/idp/storage:/var/www/html/storage
+      - ./apps/backend/idp/bootstrap/cache:/var/www/html/bootstrap/cache
       - ./docker/php/php.ini:/usr/local/etc/php/conf.d/custom.ini
     environment:
-      - APP_NAME=BackendApp1
+      - APP_NAME=Idp
       - APP_ENV=local
-      - APP_DEBUG=true
-      - APP_URL=http://localhost:8001
+      - APP_URL=http://localhost:8000/api/v1/idp
       - DB_CONNECTION=mysql
-      - DB_HOST=mysql-app1
+      - DB_HOST=mysql-shared
       - DB_PORT=3306
-      - DB_DATABASE=app1_db
+      - DB_DATABASE=idp_db
       - DB_USERNAME=laravel
       - DB_PASSWORD=secret
       - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - CACHE_DRIVER=redis
-      - SESSION_DRIVER=redis
-      - QUEUE_CONNECTION=redis
     depends_on:
-      mysql-app1:
+      mysql-shared:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - monorepo
+
+  core:
+    build:
+      context: ./apps/backend/core
+      dockerfile: Dockerfile
+    container_name: core
+    restart: unless-stopped
+    volumes:
+      - ./apps/backend/core/storage:/var/www/html/storage
+      - ./apps/backend/core/bootstrap/cache:/var/www/html/bootstrap/cache
+      - ./docker/php/php.ini:/usr/local/etc/php/conf.d/custom.ini
+    environment:
+      - APP_NAME=Core
+      - APP_ENV=local
+      - APP_URL=http://localhost:8000/api/v1/core
+      - DB_CONNECTION=mysql
+      - DB_HOST=mysql-shared
+      - DB_PORT=3306
+      - DB_DATABASE=core_db
+      - DB_USERNAME=laravel
+      - DB_PASSWORD=secret
+      - REDIS_HOST=redis
+    depends_on:
+      mysql-shared:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - monorepo
+
+  business:
+    build:
+      context: ./apps/backend/business
+      dockerfile: Dockerfile
+    container_name: business
+    restart: unless-stopped
+    volumes:
+      - ./apps/backend/business/storage:/var/www/html/storage
+      - ./apps/backend/business/bootstrap/cache:/var/www/html/bootstrap/cache
+      - ./docker/php/php.ini:/usr/local/etc/php/conf.d/custom.ini
+    environment:
+      - APP_NAME=Business
+      - APP_ENV=local
+      - APP_URL=http://localhost:8000/api/v1/business
+      - DB_CONNECTION=mysql
+      - DB_HOST=mysql-shared
+      - DB_PORT=3306
+      - DB_DATABASE=business_db
+      - DB_USERNAME=laravel
+      - DB_PASSWORD=secret
+      - REDIS_HOST=redis
+    depends_on:
+      mysql-shared:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -110,118 +293,43 @@ services:
       - monorepo
 
   # ─────────────────────────────────────────────
-  # BACKEND APP 2  (PHP-FPM)
+  # UNIFIED NGINX ROUTING GATEWAY (Replaces 3 separate proxies)
   # ─────────────────────────────────────────────
-  backend-app2:
-    build:
-      context: ./apps/backend-app2
-      dockerfile: Dockerfile
-    container_name: backend-app2
-    restart: unless-stopped
-    volumes:
-      - ./apps/backend-app2/storage:/var/www/html/storage
-      - ./apps/backend-app2/bootstrap/cache:/var/www/html/bootstrap/cache
-      - ./docker/php/php.ini:/usr/local/etc/php/conf.d/custom.ini
-    environment:
-      - APP_NAME=BackendApp2
-      - APP_ENV=local
-      - APP_DEBUG=true
-      - APP_URL=http://localhost:8002
-      - DB_CONNECTION=mysql
-      - DB_HOST=mysql-app2
-      - DB_PORT=3306
-      - DB_DATABASE=app2_db
-      - DB_USERNAME=laravel
-      - DB_PASSWORD=secret
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - CACHE_DRIVER=redis
-      - SESSION_DRIVER=redis
-      - QUEUE_CONNECTION=redis
-    depends_on:
-      mysql-app2:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    networks:
-      - monorepo
-
-  # ─────────────────────────────────────────────
-  # NGINX FOR BACKEND APP 1  →  http://localhost:8001
-  # ─────────────────────────────────────────────
-  nginx-app1:
+  nginx-gateway:
     image: nginx:1.27-alpine
-    container_name: nginx-app1
+    container_name: nginx-gateway
     restart: unless-stopped
     ports:
-      - "8001:80"
+      - "8000:80"
     volumes:
-      - ./apps/backend-app1/public:/var/www/html/public:ro
-      - ./docker/nginx/backend-app1.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./apps/backend/idp/public:/var/www/html/idp/public:ro
+      - ./apps/backend/core/public:/var/www/html/core/public:ro
+      - ./apps/backend/business/public:/var/www/html/business/public:ro
+      - ./docker/nginx/gateway.conf:/etc/nginx/conf.d/default.conf:ro
       - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
-      - backend-app1
+      - idp
+      - core
+      - business
     networks:
       - monorepo
 
   # ─────────────────────────────────────────────
-  # NGINX FOR BACKEND APP 2  →  http://localhost:8002
+  # ONE SINGLE SHARED MYSQL ENGINE (Hosts all 3 DBs)
   # ─────────────────────────────────────────────
-  nginx-app2:
-    image: nginx:1.27-alpine
-    container_name: nginx-app2
-    restart: unless-stopped
-    ports:
-      - "8002:80"
-    volumes:
-      - ./apps/backend-app2/public:/var/www/html/public:ro
-      - ./docker/nginx/backend-app2.conf:/etc/nginx/conf.d/default.conf:ro
-      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-    depends_on:
-      - backend-app2
-    networks:
-      - monorepo
-
-  # ─────────────────────────────────────────────
-  # MYSQL FOR BACKEND APP 1
-  # ─────────────────────────────────────────────
-  mysql-app1:
+  mysql-shared:
     image: mysql:8.4
-    container_name: mysql-app1
+    container_name: mysql-shared
     restart: unless-stopped
     ports:
-      - "3307:3306"
+      - "3306:3306"
     environment:
-      MYSQL_DATABASE: app1_db
+      MYSQL_ROOT_PASSWORD: rootsecret
       MYSQL_USER: laravel
       MYSQL_PASSWORD: secret
-      MYSQL_ROOT_PASSWORD: rootsecret
     volumes:
-      - mysql_app1_data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootsecret"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-    networks:
-      - monorepo
-
-  # ─────────────────────────────────────────────
-  # MYSQL FOR BACKEND APP 2
-  # ─────────────────────────────────────────────
-  mysql-app2:
-    image: mysql:8.4
-    container_name: mysql-app2
-    restart: unless-stopped
-    ports:
-      - "3308:3306"
-    environment:
-      MYSQL_DATABASE: app2_db
-      MYSQL_USER: laravel
-      MYSQL_PASSWORD: secret
-      MYSQL_ROOT_PASSWORD: rootsecret
-    volumes:
-      - mysql_app2_data:/var/lib/mysql
+      - mysql_shared_data:/var/lib/mysql
+      - ./docker/mysql/init-multiple-dbs.sh:/docker-entrypoint-initdb.d/init-multiple-dbs.sh:ro
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootsecret"]
       interval: 10s

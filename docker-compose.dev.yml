@@ -1,41 +1,197 @@
-version: "3.9"
+
 
 # Development overrides — extends docker-compose.yml
 # Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
 
+# Bring up the core shared services first
+#docker compose up -d mysql-shared redis nginx-gateway
+
+# Boot up the backend microservices
+#docker compose up -d idp core business
+
+# Particular apps
+#docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d account website admin superadmin
+
+# docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+
+
 services:
-  frontend-app1:
+  account:
     build:
+      context: ./apps/frontend/account
       target: deps
     command: npm run dev
     volumes:
-      - ./apps/frontend-app1:/app
+      - ./apps/frontend/account:/app
+      - /app/node_modules # Anonymous mapping ensures local system files remain untouched
+      - /app/.next
+    environment:
+      - NODE_ENV=development
+
+  admin:
+    build:
+      context: ./apps/frontend/admin
+      target: deps
+    command: npm run dev
+    volumes:
+      - ./apps/frontend/admin:/app
       - /app/node_modules
       - /app/.next
     environment:
       - NODE_ENV=development
 
-  frontend-app2:
+ 
+  ai:
     build:
+      context: ./apps/frontend/ai
       target: deps
     command: npm run dev
     volumes:
-      - ./apps/frontend-app2:/app
+      - ./apps/frontend/ai:/app
       - /app/node_modules
       - /app/.next
     environment:
       - NODE_ENV=development
 
-  backend-app1:
+ 
+  approval:
+    build:
+      context: ./apps/frontend/approval
+      target: deps
+    command: npm run dev
     volumes:
-      - ./apps/backend-app1:/var/www/html
+      - ./apps/frontend/approval:/app
+      - /app/node_modules
+      - /app/.next
     environment:
-      - APP_DEBUG=true
-      - APP_ENV=local
+      - NODE_ENV=development
 
-  backend-app2:
+ 
+  chats:
+    build:
+      context: ./apps/frontend/chats
+      target: deps
+    command: npm run dev
     volumes:
-      - ./apps/backend-app2:/var/www/html
+      - ./apps/frontend/chats:/app
+      - /app/node_modules
+      - /app/.next
     environment:
-      - APP_DEBUG=true
-      - APP_ENV=local
+      - NODE_ENV=development
+
+ 
+  crm:
+    build:
+      context: ./apps/frontend/crm
+      target: deps
+    command: npm run dev
+    volumes:
+      - ./apps/frontend/crm:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      - NODE_ENV=development
+
+ 
+  drive:
+    build:
+      context: ./apps/frontend/drive
+      target: deps
+    command: npm run dev
+    volumes:
+      - ./apps/frontend/drive:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      - NODE_ENV=development
+
+ 
+  ecommerce:
+    build:
+      context: ./apps/frontend/ecommerce
+      target: deps
+    command: npm run dev
+    volumes:
+      - ./apps/frontend/ecommerce:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      - NODE_ENV=development
+
+ 
+  finance:
+    build:
+      context: ./apps/frontend/finance
+      target: deps
+    command: npm run dev
+    volumes:
+      - ./apps/frontend/finance:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      - NODE_ENV=development
+
+ 
+  mail:
+    build:
+      context: ./apps/frontend/mail
+      target: deps
+    command: npm run dev
+    volumes:
+      - ./apps/frontend/mail:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      - NODE_ENV=development
+
+ 
+  notification:
+    build:
+      context: ./apps/frontend/notification
+      target: deps
+    command: npm run dev
+    volumes:
+      - ./apps/frontend/notification:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      - NODE_ENV=development
+
+ 
+  superadmin:
+    build:
+      context: ./apps/frontend/superadmin
+      target: deps
+    command: npm run dev
+    volumes:
+      - ./apps/frontend/superadmin:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      - NODE_ENV=development
+
+ 
+  website:
+    build:
+      context: ./apps/frontend/website
+      target: deps
+    command: npm run dev
+    volumes:
+      - ./apps/frontend/website:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      - NODE_ENV=development
+
+ 
+  workspace:
+    build:
+      context: ./apps/frontend/workspace
+      target: deps
+    command: npm run dev
+    volumes:
+      - ./apps/frontend/workspace:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      - NODE_ENV=development
