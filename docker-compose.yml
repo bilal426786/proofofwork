@@ -288,8 +288,11 @@ services:
   # ─────────────────────────────────────────────
   idp:
     build:
-      context: ./apps/backend/idp
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: docker/php/Dockerfile
+      args:
+        APP: idp
+    image: proofofwork/idp:latest
     container_name: idp
     restart: unless-stopped
     volumes:
@@ -299,14 +302,26 @@ services:
     environment:
       - APP_NAME=Idp
       - APP_ENV=local
+      - APP_KEY=base64:4F/PSpHvRtTBYxfv43Bg5cbrXqfEEZU5ho0j0xxnyoY=
+      - APP_DEBUG=true
       - APP_URL=http://localhost:8000/api/v1/idp
+      - LOG_CHANNEL=stack
+      - LOG_LEVEL=debug
       - DB_CONNECTION=mysql
       - DB_HOST=mysql-shared
       - DB_PORT=3306
       - DB_DATABASE=idp_db
       - DB_USERNAME=laravel
       - DB_PASSWORD=secret
+      - REDIS_CLIENT=predis
       - REDIS_HOST=redis
+      - REDIS_PASSWORD=null
+      - REDIS_PORT=6379
+      - CACHE_STORE=redis
+      - CACHE_DRIVER=redis
+      - SESSION_DRIVER=redis
+      - SESSION_LIFETIME=120
+      - QUEUE_CONNECTION=redis
     depends_on:
       mysql-shared:
         condition: service_healthy
@@ -317,8 +332,11 @@ services:
 
   core:
     build:
-      context: ./apps/backend/core
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: docker/php/Dockerfile
+      args:
+        APP: core
+    image: proofofwork/core:latest
     container_name: core
     restart: unless-stopped
     volumes:
@@ -328,14 +346,26 @@ services:
     environment:
       - APP_NAME=Core
       - APP_ENV=local
+      - APP_KEY=base64:yDMM32N7ZhSUoXUdY3KFmQKutczBiVBusQSB2wdirPM=
+      - APP_DEBUG=true
       - APP_URL=http://localhost:8000/api/v1/core
+      - LOG_CHANNEL=stack
+      - LOG_LEVEL=debug
       - DB_CONNECTION=mysql
       - DB_HOST=mysql-shared
       - DB_PORT=3306
       - DB_DATABASE=core_db
       - DB_USERNAME=laravel
       - DB_PASSWORD=secret
+      - REDIS_CLIENT=predis
       - REDIS_HOST=redis
+      - REDIS_PASSWORD=null
+      - REDIS_PORT=6379
+      - CACHE_STORE=redis
+      - CACHE_DRIVER=redis
+      - SESSION_DRIVER=redis
+      - SESSION_LIFETIME=120
+      - QUEUE_CONNECTION=redis
     depends_on:
       mysql-shared:
         condition: service_healthy
@@ -346,8 +376,11 @@ services:
 
   business:
     build:
-      context: ./apps/backend/business
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: docker/php/Dockerfile
+      args:
+        APP: business
+    image: proofofwork/business:latest
     container_name: business
     restart: unless-stopped
     volumes:
@@ -357,14 +390,26 @@ services:
     environment:
       - APP_NAME=Business
       - APP_ENV=local
+      - APP_KEY=base64:4t5ZjLMJjz1YvNK/dnbu4X39/iqj6jhYT+ozp0IDvrs=
+      - APP_DEBUG=true
       - APP_URL=http://localhost:8000/api/v1/business
+      - LOG_CHANNEL=stack
+      - LOG_LEVEL=debug
       - DB_CONNECTION=mysql
       - DB_HOST=mysql-shared
       - DB_PORT=3306
       - DB_DATABASE=business_db
       - DB_USERNAME=laravel
       - DB_PASSWORD=secret
+      - REDIS_CLIENT=predis
       - REDIS_HOST=redis
+      - REDIS_PASSWORD=null
+      - REDIS_PORT=6379
+      - CACHE_STORE=redis
+      - CACHE_DRIVER=redis
+      - SESSION_DRIVER=redis
+      - SESSION_LIFETIME=120
+      - QUEUE_CONNECTION=redis
     depends_on:
       mysql-shared:
         condition: service_healthy

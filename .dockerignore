@@ -1,4 +1,5 @@
-# Root .dockerignore — used when building images with `context: .` (docker/frontend/Dockerfile.dev)
+# Root .dockerignore — used by every image built with `context: .`
+# (docker/frontend/Dockerfile[.dev], docker/php/Dockerfile).
 node_modules/
 **/node_modules/
 .next/
@@ -9,8 +10,14 @@ node_modules/
 *.log
 npm-debug.log*
 
-# Backend (PHP/Laravel) isn't needed in the frontend dev image
-apps/backend/
+# PHP/Laravel (kept OUT of the frontend images via each Dockerfile's own
+# COPY list, not blanket-excluded here — docker/php/Dockerfile needs apps/backend/)
+**/vendor/
+**/storage/framework/cache/data/
+**/storage/framework/sessions/
+**/storage/framework/views/
+**/storage/logs/
+**/bootstrap/cache/*.php
 
 # OS / IDE
 .DS_Store

@@ -1,3 +1,10 @@
+# Shared Laravel/PHP-FPM Dockerfile for ALL apps/backend/* apps (idp, core, business).
+# One file instead of 3 byte-identical copies. Select the app with:
+#   docker build -f docker/php/Dockerfile --build-arg APP=idp .
+#
+# Build context is the REPO ROOT so this file can be reused per app via a
+# build arg, same pattern as docker/frontend/Dockerfile.
+
 FROM php:8.4-fpm-alpine
 
 # Install system dependencies
@@ -25,9 +32,6 @@ RUN docker-php-ext-install \
     gd \
     intl
 
-# Install Redis PHP extension
-RUN pecl install redis && docker-php-ext-enable redis
-
 # Install opcache
 RUN docker-php-ext-install opcache
 
@@ -36,21 +40,22 @@ COPY --from=composer:2.8 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
-# Copy composer files first for layer caching
-COPY composer.json composer.lock* ./
+ARG APP
+ENV APP=${APP}
 
-# Install dependencies
+# Copy composer files first for layer caching
+COPY apps/backend/${APP}/composer.json apps/backend/${APP}/composer.lock* ./
+
+# Install dependencies (predis/predis is a pure-PHP Redis client — see
+# config/database.php's REDIS_CLIENT=predis — so no pecl redis extension needed)
 RUN composer install --no-dev --optimize-autoloader --no-scripts --no-interaction
 
-# Copy the rest of the application
-COPY . .
+# Copy the rest of that one app
+COPY apps/backend/${APP}/ .
 
 # Set permissions
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
     && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
-
-# Generate app key and cache config
-RUN php artisan key:generate --force 2>/dev/null || true
 
 EXPOSE 9000
 CMD ["php-fpm"]
