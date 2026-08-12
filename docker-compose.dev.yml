@@ -1,197 +1,223 @@
+# Development compose — one shared image, one shared root node_modules,
+# fast reload for all apps/frontend/* Next.js apps via bind mount.
+#
+# Port order matches docker-compose.yml (production): website & workspace
+# first (entry points), then identity/admin, business apps, comms, misc.
+#
+# Usage:
+#   docker compose -f docker-compose.dev.yml up --build       # first run / after a package.json change
+#   docker compose -f docker-compose.dev.yml up                # subsequent runs (image cache hit)
+#   docker compose -f docker-compose.dev.yml up account admin   # just a subset
+#
+# This file is self-contained (does not need -f docker-compose.yml). It builds
+# ONE image (docker/frontend/Dockerfile.dev, context = repo root) and reuses it
+# for every service below — compose builds it once per `image:` tag and shares
+# it, instead of 14 independent per-app builds/installs.
 
-
-# Development overrides — extends docker-compose.yml
-# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
-
-# Bring up the core shared services first
-#docker compose up -d mysql-shared redis nginx-gateway
-
-# Boot up the backend microservices
-#docker compose up -d idp core business
-
-# Particular apps
-#docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d account website admin superadmin
-
-# docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
-
+x-frontend-dev: &frontend-dev
+  build:
+    context: .
+    dockerfile: docker/frontend/Dockerfile.dev
+  image: proofofwork/frontend-dev:latest
+  environment: &frontend-dev-env
+    NODE_ENV: development
+    WATCHPACK_POLLING: "true"   # reliable file-change detection across the bind mount
+  networks:
+    - monorepo-dev
 
 services:
-  account:
-    build:
-      context: ./apps/frontend/account
-      target: deps
+  # ── Public site — entry point ──
+  website:
+    <<: *frontend-dev
+    container_name: website-dev
+    working_dir: /app/apps/frontend/website
     command: npm run dev
+    ports:
+      - "3000:3000"
     volumes:
-      - ./apps/frontend/account:/app
-      - /app/node_modules # Anonymous mapping ensures local system files remain untouched
-      - /app/.next
-    environment:
-      - NODE_ENV=development
+      - .:/app
+      - frontend_node_modules:/app/node_modules
+      - website_next:/app/apps/frontend/website/.next
+
+  # ── Core app — entry point ──
+  workspace:
+    <<: *frontend-dev
+    container_name: workspace-dev
+    working_dir: /app/apps/frontend/workspace
+    command: npm run dev
+    ports:
+      - "3001:3000"
+    volumes:
+      - .:/app
+      - frontend_node_modules:/app/node_modules
+      - workspace_next:/app/apps/frontend/workspace/.next
+
+  # ── Identity/admin ──
+  account:
+    <<: *frontend-dev
+    container_name: account-dev
+    working_dir: /app/apps/frontend/account
+    command: npm run dev
+    ports:
+      - "3002:3000"
+    volumes:
+      - .:/app
+      - frontend_node_modules:/app/node_modules
+      - account_next:/app/apps/frontend/account/.next
 
   admin:
-    build:
-      context: ./apps/frontend/admin
-      target: deps
+    <<: *frontend-dev
+    container_name: admin-dev
+    working_dir: /app/apps/frontend/admin
     command: npm run dev
+    ports:
+      - "3003:3000"
     volumes:
-      - ./apps/frontend/admin:/app
-      - /app/node_modules
-      - /app/.next
-    environment:
-      - NODE_ENV=development
+      - .:/app
+      - frontend_node_modules:/app/node_modules
+      - admin_next:/app/apps/frontend/admin/.next
 
- 
-  ai:
-    build:
-      context: ./apps/frontend/ai
-      target: deps
-    command: npm run dev
-    volumes:
-      - ./apps/frontend/ai:/app
-      - /app/node_modules
-      - /app/.next
-    environment:
-      - NODE_ENV=development
-
- 
-  approval:
-    build:
-      context: ./apps/frontend/approval
-      target: deps
-    command: npm run dev
-    volumes:
-      - ./apps/frontend/approval:/app
-      - /app/node_modules
-      - /app/.next
-    environment:
-      - NODE_ENV=development
-
- 
-  chats:
-    build:
-      context: ./apps/frontend/chats
-      target: deps
-    command: npm run dev
-    volumes:
-      - ./apps/frontend/chats:/app
-      - /app/node_modules
-      - /app/.next
-    environment:
-      - NODE_ENV=development
-
- 
-  crm:
-    build:
-      context: ./apps/frontend/crm
-      target: deps
-    command: npm run dev
-    volumes:
-      - ./apps/frontend/crm:/app
-      - /app/node_modules
-      - /app/.next
-    environment:
-      - NODE_ENV=development
-
- 
-  drive:
-    build:
-      context: ./apps/frontend/drive
-      target: deps
-    command: npm run dev
-    volumes:
-      - ./apps/frontend/drive:/app
-      - /app/node_modules
-      - /app/.next
-    environment:
-      - NODE_ENV=development
-
- 
-  ecommerce:
-    build:
-      context: ./apps/frontend/ecommerce
-      target: deps
-    command: npm run dev
-    volumes:
-      - ./apps/frontend/ecommerce:/app
-      - /app/node_modules
-      - /app/.next
-    environment:
-      - NODE_ENV=development
-
- 
-  finance:
-    build:
-      context: ./apps/frontend/finance
-      target: deps
-    command: npm run dev
-    volumes:
-      - ./apps/frontend/finance:/app
-      - /app/node_modules
-      - /app/.next
-    environment:
-      - NODE_ENV=development
-
- 
-  mail:
-    build:
-      context: ./apps/frontend/mail
-      target: deps
-    command: npm run dev
-    volumes:
-      - ./apps/frontend/mail:/app
-      - /app/node_modules
-      - /app/.next
-    environment:
-      - NODE_ENV=development
-
- 
-  notification:
-    build:
-      context: ./apps/frontend/notification
-      target: deps
-    command: npm run dev
-    volumes:
-      - ./apps/frontend/notification:/app
-      - /app/node_modules
-      - /app/.next
-    environment:
-      - NODE_ENV=development
-
- 
   superadmin:
-    build:
-      context: ./apps/frontend/superadmin
-      target: deps
+    <<: *frontend-dev
+    container_name: superadmin-dev
+    working_dir: /app/apps/frontend/superadmin
     command: npm run dev
+    ports:
+      - "3004:3000"
     volumes:
-      - ./apps/frontend/superadmin:/app
-      - /app/node_modules
-      - /app/.next
-    environment:
-      - NODE_ENV=development
+      - .:/app
+      - frontend_node_modules:/app/node_modules
+      - superadmin_next:/app/apps/frontend/superadmin/.next
 
- 
-  website:
-    build:
-      context: ./apps/frontend/website
-      target: deps
+  # ── Business apps ──
+  crm:
+    <<: *frontend-dev
+    container_name: crm-dev
+    working_dir: /app/apps/frontend/crm
     command: npm run dev
+    ports:
+      - "3005:3000"
     volumes:
-      - ./apps/frontend/website:/app
-      - /app/node_modules
-      - /app/.next
-    environment:
-      - NODE_ENV=development
+      - .:/app
+      - frontend_node_modules:/app/node_modules
+      - crm_next:/app/apps/frontend/crm/.next
 
- 
-  workspace:
-    build:
-      context: ./apps/frontend/workspace
-      target: deps
+  finance:
+    <<: *frontend-dev
+    container_name: finance-dev
+    working_dir: /app/apps/frontend/finance
     command: npm run dev
+    ports:
+      - "3006:3000"
     volumes:
-      - ./apps/frontend/workspace:/app
-      - /app/node_modules
-      - /app/.next
-    environment:
-      - NODE_ENV=development
+      - .:/app
+      - frontend_node_modules:/app/node_modules
+      - finance_next:/app/apps/frontend/finance/.next
+
+  ecommerce:
+    <<: *frontend-dev
+    container_name: ecommerce-dev
+    working_dir: /app/apps/frontend/ecommerce
+    command: npm run dev
+    ports:
+      - "3007:3000"
+    volumes:
+      - .:/app
+      - frontend_node_modules:/app/node_modules
+      - ecommerce_next:/app/apps/frontend/ecommerce/.next
+
+  drive:
+    <<: *frontend-dev
+    container_name: drive-dev
+    working_dir: /app/apps/frontend/drive
+    command: npm run dev
+    ports:
+      - "3008:3000"
+    volumes:
+      - .:/app
+      - frontend_node_modules:/app/node_modules
+      - drive_next:/app/apps/frontend/drive/.next
+
+  approval:
+    <<: *frontend-dev
+    container_name: approval-dev
+    working_dir: /app/apps/frontend/approval
+    command: npm run dev
+    ports:
+      - "3009:3000"
+    volumes:
+      - .:/app
+      - frontend_node_modules:/app/node_modules
+      - approval_next:/app/apps/frontend/approval/.next
+
+  # ── Comms ──
+  mail:
+    <<: *frontend-dev
+    container_name: mail-dev
+    working_dir: /app/apps/frontend/mail
+    command: npm run dev
+    ports:
+      - "3010:3000"
+    volumes:
+      - .:/app
+      - frontend_node_modules:/app/node_modules
+      - mail_next:/app/apps/frontend/mail/.next
+
+  chats:
+    <<: *frontend-dev
+    container_name: chats-dev
+    working_dir: /app/apps/frontend/chats
+    command: npm run dev
+    ports:
+      - "3011:3000"
+    volumes:
+      - .:/app
+      - frontend_node_modules:/app/node_modules
+      - chats_next:/app/apps/frontend/chats/.next
+
+  notification:
+    <<: *frontend-dev
+    container_name: notification-dev
+    working_dir: /app/apps/frontend/notification
+    command: npm run dev
+    ports:
+      - "3012:3000"
+    volumes:
+      - .:/app
+      - frontend_node_modules:/app/node_modules
+      - notification_next:/app/apps/frontend/notification/.next
+
+  # ── Misc ──
+  ai:
+    <<: *frontend-dev
+    container_name: ai-dev
+    working_dir: /app/apps/frontend/ai
+    command: npm run dev
+    ports:
+      - "3013:3000"
+    volumes:
+      - .:/app
+      - frontend_node_modules:/app/node_modules
+      - ai_next:/app/apps/frontend/ai/.next
+
+
+networks:
+  monorepo-dev:
+    driver: bridge
+
+volumes:
+  frontend_node_modules:
+  website_next:
+  workspace_next:
+  account_next:
+  admin_next:
+  superadmin_next:
+  crm_next:
+  finance_next:
+  ecommerce_next:
+  drive_next:
+  approval_next:
+  mail_next:
+  chats_next:
+  notification_next:
+  ai_next:

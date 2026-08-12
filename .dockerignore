@@ -1,0 +1,18 @@
+# Root .dockerignore — used when building images with `context: .` (docker/frontend/Dockerfile.dev)
+node_modules/
+**/node_modules/
+.next/
+**/.next/
+.turbo/
+**/.turbo/
+.git/
+*.log
+npm-debug.log*
+
+# Backend (PHP/Laravel) isn't needed in the frontend dev image
+apps/backend/
+
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/

@@ -1,0 +1,21 @@
+# Single shared DEV image for all apps/frontend/* Next.js apps.
+#
+# Build context is the REPO ROOT (see docker-compose.dev.yml), not a single app,
+# because npm workspaces needs to see every workspace's package.json to install
+# one deduplicated node_modules at the root. All 14 apps pin identical
+# next/react/tailwind/eslint versions, so this install fully hoists into a
+# single node_modules — there's no per-app node_modules in dev anymore.
+#
+# Source is bind-mounted at runtime (see docker-compose.dev.yml), so rebuilding
+# this image is only needed when a package.json/package-lock.json changes, not
+# on every source edit — hot reload comes from the bind mount + `next dev`.
+
+FROM node:22-alpine AS deps
+WORKDIR /app
+
+COPY . .
+RUN npm install --prefer-offline --no-audit --fund=false
+
+ENV NODE_ENV=development
+EXPOSE 3000
+CMD ["npm", "run", "dev"]
